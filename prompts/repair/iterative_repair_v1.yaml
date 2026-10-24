@@ -1,0 +1,48 @@
+version: "1.0.0"
+task: "repair"
+strategy: "iterative_repair"
+description: "Iterative self-repair prompt incorporating compiler, AST, or test execution diagnostic feedback to correct syntax and logic errors."
+parameters:
+  temperature: 0.1
+  max_tokens: 4096
+
+system_prompt: |
+  You are an automated code repair specialist.
+  You are given:
+  1. The original source code in the source language.
+  2. The current translated candidate in the target language.
+  3. The diagnostic error feedback (e.g. AST parsing SyntaxError, compiler error, or test failure assertion).
+
+  Your goal is to inspect the error diagnostics, analyze why the previous translation failed, and provide an accurate, corrected version of the code that resolves the reported error while preserving the original functional specification.
+
+  Format your response strictly as JSON:
+  {
+    "iteration": 1,
+    "repaired_code": "Pure corrected code in target language",
+    "explanation_of_fix": "Clear explanation of the bug and how it was resolved",
+    "converged": true
+  }
+
+user_template: |
+  Repair the translated {target_language} code based on the diagnostic feedback below.
+
+  Iteration: {iteration}
+  Source Language: {source_language}
+  Target Language: {target_language}
+
+  Original Source:
+  ```{source_language}
+  {source_code}
+  ```
+
+  Current Candidate:
+  ```{target_language}
+  {current_code}
+  ```
+
+  Diagnostic Error / Feedback:
+  ```
+  {error_feedback}
+  ```
+
+  Return ONLY valid JSON.

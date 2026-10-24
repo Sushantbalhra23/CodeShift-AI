@@ -1,0 +1,85 @@
+version: "1.0.0"
+task: "translation"
+strategy: "few_shot"
+description: "In-context few-shot translation using curated idiomatic exemplars demonstrating collection mapping, exception handling, and paradigm bridging."
+parameters:
+  temperature: 0.2
+  max_tokens: 4096
+  top_p: 0.95
+
+system_prompt: |
+  You are an expert compiler engineer specializing in translating between Java and Python.
+  Follow the patterns, idiomatic styles, and semantic mappings demonstrated in the examples below.
+  Preserve precision, type safety invariants, and performance characteristics.
+  Output ONLY the final translated code inside a single target language markdown code block.
+
+user_template: |
+  Here are reference translation examples demonstrating idiomatic conversions:
+
+  ### Example 1: Stream Filtering & Mapping
+  Java Source:
+  ```java
+  import java.util.List;
+  import java.util.stream.Collectors;
+
+  public class FilterUtils {
+      public static List<String> filterAndUppercase(List<String> items, int minLength) {
+          if (items == null) return List.of();
+          return items.stream()
+                      .filter(s -> s != null && s.length() >= minLength)
+                      .map(String::toUpperCase)
+                      .collect(Collectors.toList());
+      }
+  }
+  ```
+  Python Translation:
+  ```python
+  from typing import List, Optional
+
+  class FilterUtils:
+      @staticmethod
+      def filter_and_uppercase(items: Optional[List[Optional[str]]], min_length: int) -> List[str]:
+          if items is None:
+              return []
+          return [s.upper() for s in items if s is not None and len(s) >= min_length]
+  ```
+
+  ### Example 2: Key-Value Counter with Default Values
+  Python Source:
+  ```python
+  from collections import defaultdict
+  from typing import List, Dict
+
+  def count_frequencies(tokens: List[str]) -> Dict[str, int]:
+      counts = defaultdict(int)
+      for token in tokens:
+          counts[token] += 1
+      return dict(counts)
+  ```
+  Java Translation:
+  ```java
+  import java.util.HashMap;
+  import java.util.List;
+  import java.util.Map;
+
+  public class FrequencyCounter {
+      public static Map<String, Integer> countFrequencies(List<String> tokens) {
+          Map<String, Integer> counts = new HashMap<>();
+          if (tokens == null) return counts;
+          for (String token : tokens) {
+              counts.put(token, counts.getOrDefault(token, 0) + 1);
+          }
+          return counts;
+      }
+  }
+  ```
+
+  ---
+  Now, translate the following {source_language} code into idiomatic {target_language}:
+
+  Source Language: {source_language}
+  Target Language: {target_language}
+
+  ```{source_language}
+  {source_code}
+  ```
