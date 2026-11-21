@@ -1,16 +1,18 @@
 import json
 import re
-from typing import Optional
+from typing import List, Optional, Tuple
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import LLMProviderError, PromptTemplateNotFoundError
 from app.core.logging import logger
-from app.core.security import validate_code_payload, validate_language_pair
 from app.db.models import EvaluationRecord, TranslationRecord
 from app.llm.base import LLMMessage
 from app.llm.factory import get_llm_client
 from app.prompt_engine.registry import get_prompt_registry
 from app.sandbox.static_analyzer import StaticAnalyzer
 from app.schemas.translation import (
+    LLMTranslationPayload,
     TranslationMetadata,
     TranslationRequest,
     TranslationResponse,
@@ -28,23 +30,31 @@ class TranslationService:
         provider: Optional[str] = None,
         experiment_id: Optional[int] = None,
     ) -> TranslationResponse:
-        # 1. Validation
-        validate_language_pair(request.source_language, request.target_language)
-        code = validate_code_payload(request.source_code)
+        # 1. Pydantic validator has already validated source_code, language pair, and size limits
 
-        # 2. Retrieve versioned prompt template
-        template = self.registry.get_template(
-            task="translation",
-            strategy=request.strategy,
-            version=request.prompt_version,
-        )
+        # 2. Strategy resolution (supports both 'baseline' and 'zero_shot', etc.)
+        strategy = request.prompt_strategy or "baseline"
+        try:
+            template = self.registry.get_template(
+                task="translation",
+                strategy=strategy,
+                version=request.prompt_version,
+            )
+        except PromptTemplateNotFoundError:
+            # Fallback to zero_shot if baseline is not found or vice versa
+            fallback = "zero_shot" if strategy == "baseline" else "baseline"
+            template = self.registry.get_template(
+                task="translation",
+                strategy=fallback,
+                version=request.prompt_version,
+            )
 
         # 3. Render prompt
         system_text = template.render_system()
         user_text = template.render_user(
             source_language=request.source_language.capitalize(),
             target_language=request.target_language.capitalize(),
-            source_code=code,
+            source_code=request.source_code,
         )
 
         messages = [
@@ -52,27 +62,28 @@ class TranslationService:
             LLMMessage(role="user", content=user_text),
         ]
 
-        # 4. Dispatch to LLM
+        # 4. Dispatch to configured LLM client
         client = get_llm_client(provider)
         temp = request.temperature if request.temperature is not None else template.parameters.temperature
 
-        response_format = "json" if request.strategy == "chain_of_thought" else None
         llm_resp = await client.generate(
             messages=messages,
             temperature=temp,
             max_tokens=template.parameters.max_tokens,
             top_p=template.parameters.top_p or 0.95,
-            response_format=response_format,
+            response_format="json",
         )
 
-        # 5. Extract translated code and explanation
-        translated_code, explanation = self._parse_llm_output(llm_resp.content, request.strategy, request.target_language)
+        # 5. Parse and validate structured model output
+        translated_code, explanation, assumptions, warnings = self._parse_structured_output(
+            llm_resp.content, request.target_language
+        )
 
-        # 6. Safe static AST validation
+        # 6. Static AST check
         ast_result = StaticAnalyzer.validate_code(translated_code, request.target_language)
 
         metadata = TranslationMetadata(
-            strategy=request.strategy,
+            strategy=strategy,
             prompt_version=template.version,
             model=llm_resp.model,
             provider=llm_resp.provider,
@@ -84,7 +95,7 @@ class TranslationService:
             ast_error=ast_result.error_message,
         )
 
-        # 7. Persist to DB if session provided
+        # 7. Persist to SQLite DB if session available
         record_id = None
         if self.db:
             try:
@@ -92,9 +103,9 @@ class TranslationService:
                     experiment_id=experiment_id,
                     source_language=request.source_language,
                     target_language=request.target_language,
-                    source_code=code,
+                    source_code=request.source_code,
                     translated_code=translated_code,
-                    strategy=request.strategy,
+                    strategy=strategy,
                     prompt_version=template.version,
                     model_name=llm_resp.model,
                     provider=llm_resp.provider,
@@ -120,67 +131,80 @@ class TranslationService:
                 await self.db.refresh(db_record)
                 record_id = db_record.id
             except Exception as e:
-                logger.error(f"Failed to record translation in database: {e}")
+                logger.error(f"Failed to persist translation record: {e}")
                 await self.db.rollback()
 
         return TranslationResponse(
+            translated_code=translated_code,
+            explanation=explanation,
+            assumptions=assumptions,
+            warnings=warnings,
+            metadata=metadata,
             id=record_id,
             source_language=request.source_language,
             target_language=request.target_language,
-            source_code=code,
-            translated_code=translated_code,
-            explanation=explanation,
-            metadata=metadata,
         )
 
-    def _parse_llm_output(
+    def _parse_structured_output(
         self,
         raw_content: str,
-        strategy: str,
         target_language: str
-    ) -> tuple[str, Optional[str]]:
-        content = raw_content.strip()
+    ) -> Tuple[str, str, List[str], List[str]]:
+        content = (raw_content or "").strip()
+        if not content:
+            raise LLMProviderError(
+                "LLM returned an empty translation payload.",
+                details={"target_language": target_language},
+            )
 
-        # Chain of thought JSON parsing
-        if strategy == "chain_of_thought":
-            try:
-                # Remove json markdown formatting if wrapped
-                clean_json = re.sub(r"^```json\s*", "", content, flags=re.IGNORECASE)
-                clean_json = re.sub(r"\s*```$", "", clean_json)
-                data = json.loads(clean_json)
-                code = data.get("translated_code", "").strip()
-                explanation = data.get("explanation")
-                if not explanation and "step_1_analysis" in data:
-                    explanation = f"Step 1: {data.get('step_1_analysis')}\nStep 2: {data.get('step_2_type_mapping')}\nStep 3: {data.get('step_3_library_translation')}"
-                if code:
-                    return self._clean_code_block(code), explanation
-            except Exception as e:
-                logger.warning(f"Could not parse CoT response as JSON: {e}")
+        parsed = self._try_parse_json_payload(content)
+        if parsed:
+            code = self._strip_code_fences(parsed.translated_code)
+            if code:
+                explanation = parsed.explanation.strip()
+                return (
+                    code,
+                    explanation or "Code translation generated successfully.",
+                    parsed.assumptions,
+                    parsed.warnings,
+                )
 
-        # Extract markdown fenced code block
-        pattern = rf"```(?:{target_language})?\s*\n(.*?)\n```"
+        pattern = rf"```(?:{re.escape(target_language)})?\s*\n(.*?)\n```"
         match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
         if match:
             code = match.group(1).strip()
-            # Everything outside the code block can be treated as explanation
-            explanation = re.sub(pattern, "", content, flags=re.DOTALL | re.IGNORECASE).strip() or None
-            return code, explanation
+            if code:
+                explanation = re.sub(pattern, "", content, flags=re.DOTALL | re.IGNORECASE).strip()
+                return (
+                    code,
+                    explanation or f"Translated to {target_language} using markdown fences.",
+                    [],
+                    ["Model produced unstructured markdown block instead of strict JSON schema."],
+                )
 
-        # Fallback: if no markdown fences, check for general ``` block
-        fallback_pattern = r"```\s*\n(.*?)\n```"
-        match_fallback = re.search(fallback_pattern, content, re.DOTALL)
-        if match_fallback:
-            code = match_fallback.group(1).strip()
-            explanation = re.sub(fallback_pattern, "", content, flags=re.DOTALL).strip() or None
-            return code, explanation
+        raise LLMProviderError(
+            "LLM returned output that did not match the required translation schema.",
+            details={"raw_preview": content[:500], "target_language": target_language},
+        )
 
-        # Pure code without fences
-        return content, None
+    def _try_parse_json_payload(self, content: str) -> Optional[LLMTranslationPayload]:
+        try:
+            clean_json = re.sub(r"^```(?:json)?\s*", "", content, flags=re.IGNORECASE)
+            clean_json = re.sub(r"\s*```$", "", clean_json).strip()
+            data = json.loads(clean_json)
+            if not isinstance(data, dict):
+                return None
+            if not data.get("explanation") and data.get("step_1_analysis"):
+                data["explanation"] = (
+                    f"Step 1: {data.get('step_1_analysis')}\nStep 2: {data.get('step_2_type_mapping')}"
+                )
+            return LLMTranslationPayload.model_validate(data)
+        except (json.JSONDecodeError, ValidationError, TypeError, ValueError) as e:
+            logger.debug(f"Structured JSON parse fallback: {e}")
+            return None
 
     @staticmethod
-    def _clean_code_block(code: str) -> str:
-        pattern = r"^```[a-zA-Z]*\n?(.*?)\n?```$"
-        match = re.match(pattern, code.strip(), re.DOTALL)
-        if match:
-            return match.group(1).strip()
-        return code.strip()
+    def _strip_code_fences(code: str) -> str:
+        cleaned = re.sub(r"^```[a-zA-Z]*\n?", "", code.strip())
+        cleaned = re.sub(r"\n?```$", "", cleaned).strip()
+        return cleaned

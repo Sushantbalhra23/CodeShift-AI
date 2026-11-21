@@ -1,123 +1,129 @@
 import React from 'react';
 import { PromptStrategy } from '../../api/types';
-import { Sparkles, Layers, GitBranch, Shield, Zap } from 'lucide-react';
-
-interface StrategyOption {
-  id: PromptStrategy;
-  name: string;
-  tag: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-export const STRATEGY_OPTIONS: StrategyOption[] = [
-  {
-    id: 'zero_shot',
-    name: 'Zero-Shot Direct',
-    tag: 'Baseline',
-    description: 'Direct translation without in-context exemplars. Tests raw foundational model competence.',
-    icon: Zap,
-  },
-  {
-    id: 'few_shot',
-    name: 'Few-Shot In-Context',
-    tag: 'Exemplar-Guided',
-    description: 'Includes curated bidirectional translation exemplars mapping collections, streams, and exceptions.',
-    icon: Layers,
-  },
-  {
-    id: 'chain_of_thought',
-    name: 'Chain-of-Thought (CoT)',
-    tag: 'Multi-Stage Reasoning',
-    description: 'Decomposes task into semantic analysis, type mapping, and standard library equivalence.',
-    icon: GitBranch,
-  },
-  {
-    id: 'role_expert',
-    name: 'Role-Prompted Expert',
-    tag: 'Persona / Invariants',
-    description: 'Simulates a Principal Polyglot Compiler Architect enforcing zero-defect invariant safety.',
-    icon: Shield,
-  },
-];
+import { Sparkles, Layers, GitBranch, Shield, RefreshCw, Zap } from 'lucide-react';
 
 interface StrategySelectorProps {
   selectedStrategy: PromptStrategy;
-  onSelectStrategy: (strat: PromptStrategy) => void;
-  multiSelect?: boolean;
-  selectedStrategies?: PromptStrategy[];
-  onToggleStrategy?: (strat: PromptStrategy) => void;
+  onSelectStrategy: (s: PromptStrategy) => void;
 }
+
+const strategies: {
+  id: PromptStrategy;
+  label: string;
+  shortDesc: string;
+  icon: React.FC<{ className?: string }>;
+  color: string;
+  glow: string;
+  activeBg: string;
+  activeBorder: string;
+  activeText: string;
+}[] = [
+  {
+    id: 'baseline',
+    label: 'Baseline',
+    shortDesc: 'Direct zero-shot',
+    icon: Zap,
+    color: 'text-slate-400',
+    glow: 'rgba(148,163,184,0.25)',
+    activeBg: 'rgba(148,163,184,0.08)',
+    activeBorder: 'rgba(148,163,184,0.35)',
+    activeText: 'text-slate-200',
+  },
+  {
+    id: 'zero_shot',
+    label: 'Zero-Shot',
+    shortDesc: 'No exemplars',
+    icon: Sparkles,
+    color: 'text-cyan-400',
+    glow: 'rgba(6,182,212,0.3)',
+    activeBg: 'rgba(6,182,212,0.08)',
+    activeBorder: 'rgba(6,182,212,0.4)',
+    activeText: 'text-cyan-300',
+  },
+  {
+    id: 'few_shot',
+    label: 'Few-Shot',
+    shortDesc: 'Exemplar guided',
+    icon: Layers,
+    color: 'text-blue-400',
+    glow: 'rgba(59,130,246,0.3)',
+    activeBg: 'rgba(59,130,246,0.08)',
+    activeBorder: 'rgba(59,130,246,0.4)',
+    activeText: 'text-blue-300',
+  },
+  {
+    id: 'chain_of_thought',
+    label: 'Chain-of-Thought',
+    shortDesc: 'Multi-stage',
+    icon: GitBranch,
+    color: 'text-purple-400',
+    glow: 'rgba(139,92,246,0.3)',
+    activeBg: 'rgba(139,92,246,0.08)',
+    activeBorder: 'rgba(139,92,246,0.4)',
+    activeText: 'text-purple-300',
+  },
+  {
+    id: 'role_expert',
+    label: 'Role-Expert',
+    shortDesc: 'Compiler persona',
+    icon: Shield,
+    color: 'text-emerald-400',
+    glow: 'rgba(16,185,129,0.3)',
+    activeBg: 'rgba(16,185,129,0.08)',
+    activeBorder: 'rgba(16,185,129,0.4)',
+    activeText: 'text-emerald-300',
+  },
+  {
+    id: 'iterative_repair',
+    label: 'Self-Repair',
+    shortDesc: 'Closed loop',
+    icon: RefreshCw,
+    color: 'text-amber-400',
+    glow: 'rgba(245,158,11,0.3)',
+    activeBg: 'rgba(245,158,11,0.08)',
+    activeBorder: 'rgba(245,158,11,0.4)',
+    activeText: 'text-amber-300',
+  },
+];
 
 export const StrategySelector: React.FC<StrategySelectorProps> = ({
   selectedStrategy,
   onSelectStrategy,
-  multiSelect = false,
-  selectedStrategies = ['zero_shot', 'few_shot', 'chain_of_thought', 'role_expert'],
-  onToggleStrategy,
 }) => {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold tracking-wider uppercase text-slate-400 flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Prompt Engineering Strategy</span>
-        </h3>
-        {multiSelect && (
-          <span className="text-xs text-slate-400">
-            Selected: <span className="text-cyan-400 font-mono">{selectedStrategies.length}</span> strategies
-          </span>
-        )}
+    <div
+      className="p-3 rounded-2xl"
+      style={{
+        background: 'rgba(7, 14, 32, 0.6)',
+        border: '1px solid rgba(99,125,180,0.1)',
+      }}
+    >
+      <div className="flex items-center gap-1.5 mb-2.5 px-1">
+        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Prompt Strategy</span>
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {STRATEGY_OPTIONS.map((opt) => {
-          const Icon = opt.icon;
-          const isSelected = multiSelect
-            ? selectedStrategies.includes(opt.id)
-            : selectedStrategy === opt.id;
-
+      <div className="flex flex-wrap gap-2">
+        {strategies.map((s) => {
+          const Icon = s.icon;
+          const isActive = selectedStrategy === s.id;
           return (
             <button
-              key={opt.id}
-              onClick={() => {
-                if (multiSelect && onToggleStrategy) {
-                  onToggleStrategy(opt.id);
-                } else {
-                  onSelectStrategy(opt.id);
-                }
+              key={s.id}
+              onClick={() => onSelectStrategy(s.id)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium transition-all duration-200"
+              style={{
+                background: isActive ? s.activeBg : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${isActive ? s.activeBorder : 'rgba(255,255,255,0.06)'}`,
+                boxShadow: isActive ? `0 0 16px ${s.glow}` : 'none',
+                color: isActive ? undefined : 'rgb(100, 116, 139)',
               }}
-              className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
-                isSelected
-                  ? 'bg-cyan-950/40 border-cyan-500/80 shadow-md shadow-cyan-950/50 ring-1 ring-cyan-500/30'
-                  : 'bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40'
-              }`}
             >
-              <div className="flex items-center justify-between w-full mb-2">
-                <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                    isSelected ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800 text-slate-300'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                </div>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                    isSelected
-                      ? 'bg-cyan-900/60 text-cyan-300 border border-cyan-700'
-                      : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {opt.tag}
-                </span>
-              </div>
-
-              <span className={`text-sm font-semibold mb-1 ${isSelected ? 'text-white' : 'text-slate-200'}`}>
-                {opt.name}
+              <Icon className={`w-3.5 h-3.5 ${isActive ? s.color : 'text-slate-600'} transition-colors`} />
+              <span className={`font-semibold ${isActive ? s.activeText : ''}`}>{s.label}</span>
+              <span
+                className={`text-[10px] font-mono hidden sm:inline ${isActive ? 'opacity-70' : 'opacity-40'}`}
+              >
+                {s.shortDesc}
               </span>
-              <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
-                {opt.description}
-              </p>
             </button>
           );
         })}

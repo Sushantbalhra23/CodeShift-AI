@@ -1,6 +1,7 @@
 export type SupportedLanguage = 'java' | 'python';
 
 export type PromptStrategy =
+  | 'baseline'
   | 'zero_shot'
   | 'few_shot'
   | 'chain_of_thought'
@@ -25,11 +26,15 @@ export interface TranslationResponse {
   id?: number;
   source_language: SupportedLanguage;
   target_language: SupportedLanguage;
-  source_code: string;
+  source_code?: string;
   translated_code: string;
   explanation?: string | null;
+  /** Assumptions made by the model during translation */
+  assumptions?: string[];
+  /** Semantic or runtime warnings about the translation */
+  warnings?: string[];
   metadata: TranslationMetadata;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface ParadigmDifference {
