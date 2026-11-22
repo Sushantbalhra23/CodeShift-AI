@@ -5,6 +5,7 @@ import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { SupportedLanguage, TranslationResponse } from '../../api/types';
+// Title: Import Lucide icons used by the translation workspace
 import {
   Sparkles,
   Clock,
@@ -14,7 +15,7 @@ import {
   Code2,
   Info,
   AlertTriangle,
-  SwapHorizontal,
+  ArrowLeftRight,
   Download,
   Maximize2,
   Minimize2,
@@ -160,7 +161,7 @@ export const TranslationTab: React.FC<TranslationTabProps> = ({
           <Button
             variant="outline"
             size="xs"
-            icon={<SwapHorizontal />}
+            icon={<ArrowLeftRight />}
             onClick={swapLanguages}
             aria-label="Swap source and target languages"
             title="Swap languages (Ctrl+Shift+L)"

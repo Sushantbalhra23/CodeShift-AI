@@ -46,11 +46,16 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# Title: Database and data directory ignore rules
 # Databases
 *.db
 *.sqlite
 *.sqlite3
 data/
+
+# Allow frontend static TypeScript data files
+!frontend/src/data/
+!frontend/src/data/**
 
 # Testing & Coverage
 .pytest_cache/
