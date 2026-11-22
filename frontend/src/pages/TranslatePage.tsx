@@ -20,6 +20,7 @@ import {
   DEMO_TESTS,
 } from '../data/demoData';
 import { TranslationService } from '../services/translationService';
+import { getApiErrorMessage } from '../services/apiClient';
 import {
   ArrowLeftRight,
   Play,
@@ -44,7 +45,7 @@ export const TranslatePage: React.FC = () => {
   const [translatedCode, setTranslatedCode] = useState<string>('');
 
   // Strategy & View controls
-  const [selectedStrategy, setSelectedStrategy] = useState<PromptStrategy>('zero_shot');
+  const [selectedStrategy, setSelectedStrategy] = useState<PromptStrategy>('baseline');
   const [viewMode, setViewMode] = useState<'split' | 'diff'>('split');
 
   // Translation execution states
@@ -113,6 +114,8 @@ export const TranslatePage: React.FC = () => {
 
     setLoadingTranslate(true);
     setTranslateError(null);
+    setTranslationResult(null);
+    setTranslatedCode('');
     try {
       const resp = await TranslationService.translate(
         sourceCode,
@@ -120,14 +123,21 @@ export const TranslatePage: React.FC = () => {
         targetLanguage,
         selectedStrategy
       );
+      if (!resp?.translated_code) {
+        setTranslateError('Translation service returned an empty result. No code was generated.');
+        return;
+      }
       setTranslationResult(resp);
       setTranslatedCode(resp.translated_code);
-    } catch (e: any) {
-      const msg =
-        e.response?.data?.message ||
-        e.message ||
-        'Cannot connect to FastAPI backend at http://localhost:8000. Start backend server or click "Preview Demo Translation".';
-      setTranslateError(msg);
+    } catch (e: unknown) {
+      setTranslationResult(null);
+      setTranslatedCode('');
+      setTranslateError(
+        getApiErrorMessage(
+          e,
+          'Cannot connect to FastAPI backend at http://localhost:8000. Start the backend and retry Translate.'
+        )
+      );
     } finally {
       setLoadingTranslate(false);
     }

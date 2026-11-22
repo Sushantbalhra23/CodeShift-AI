@@ -33,7 +33,7 @@ export class TranslationService {
       source_code: sourceCode,
       source_language: sourceLanguage,
       target_language: targetLanguage,
-      strategy,
+      prompt_strategy: strategy,
       temperature,
     });
     return data;

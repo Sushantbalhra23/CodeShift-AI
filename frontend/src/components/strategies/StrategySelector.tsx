@@ -1,6 +1,6 @@
 import React from 'react';
 import { PromptStrategy } from '../../api/types';
-import { Sparkles, Layers, GitBranch, Shield, Zap } from 'lucide-react';
+import { Sparkles, Layers, GitBranch, Shield, Zap, FileJson } from 'lucide-react';
 
 interface StrategyOption {
   id: PromptStrategy;
@@ -12,9 +12,16 @@ interface StrategyOption {
 
 export const STRATEGY_OPTIONS: StrategyOption[] = [
   {
+    id: 'baseline',
+    name: 'Baseline Structured',
+    tag: 'JSON Schema',
+    description: 'Canonical translation prompt that requires structured JSON: code, explanation, assumptions, and warnings.',
+    icon: FileJson,
+  },
+  {
     id: 'zero_shot',
     name: 'Zero-Shot Direct',
-    tag: 'Baseline',
+    tag: 'Direct',
     description: 'Direct translation without in-context exemplars. Tests raw foundational model competence.',
     icon: Zap,
   },
@@ -70,7 +77,7 @@ export const StrategySelector: React.FC<StrategySelectorProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {STRATEGY_OPTIONS.map((opt) => {
           const Icon = opt.icon;
           const isSelected = multiSelect
