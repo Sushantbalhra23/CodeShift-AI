@@ -43,6 +43,7 @@
 CodeShift-AI/
 ├── prompts/                         # Versioned prompt templates (isolated from business logic)
 │   ├── translation/
+│   │   ├── baseline_v1.yaml
 │   │   ├── zero_shot_v1.yaml
 │   │   ├── few_shot_v1.yaml
 │   │   ├── chain_of_thought_v1.yaml
@@ -108,9 +109,10 @@ source ../venv/bin/activate
 # Install dependencies
 pip install -r requirements-dev.txt
 
-# Configure environment variables
+# Configure environment variables (API keys stay on the backend only)
 cp .env.example .env
-# Edit .env with your GEMINI_API_KEY or OPENAI_API_KEY (Defaults to 'mock' for safe offline testing)
+# Optional: set DEFAULT_LLM_PROVIDER=gemini|openai and the matching API key.
+# Leave DEFAULT_LLM_PROVIDER=mock for local work without paid API calls.
 
 # Run test suite
 pytest -v

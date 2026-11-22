@@ -14,7 +14,66 @@ import {
   Shield,
   RefreshCw,
   Eye,
+  Thermometer,
+  Cpu,
+  Hash,
 } from 'lucide-react';
+
+const strategyMeta: Record<string, {
+  icon: React.ComponentType<{ className?: string; color?: string }>;
+  color: string;
+  glow: string;
+  activeBg: string;
+  activeBorder: string;
+  badge: string;
+  badgeVariant: string;
+}> = {
+  zero_shot: {
+    icon: Sparkles,
+    color: '#06b6d4',
+    glow: 'rgba(6,182,212,0.2)',
+    activeBg: 'rgba(6,182,212,0.07)',
+    activeBorder: 'rgba(6,182,212,0.4)',
+    badge: 'Baseline',
+    badgeVariant: 'cyan',
+  },
+  few_shot: {
+    icon: Layers,
+    color: '#3b82f6',
+    glow: 'rgba(59,130,246,0.2)',
+    activeBg: 'rgba(59,130,246,0.07)',
+    activeBorder: 'rgba(59,130,246,0.4)',
+    badge: 'In-Context',
+    badgeVariant: 'blue',
+  },
+  chain_of_thought: {
+    icon: GitBranch,
+    color: '#8b5cf6',
+    glow: 'rgba(139,92,246,0.2)',
+    activeBg: 'rgba(139,92,246,0.07)',
+    activeBorder: 'rgba(139,92,246,0.4)',
+    badge: 'Reasoning',
+    badgeVariant: 'purple',
+  },
+  role_expert: {
+    icon: Shield,
+    color: '#10b981',
+    glow: 'rgba(16,185,129,0.2)',
+    activeBg: 'rgba(16,185,129,0.07)',
+    activeBorder: 'rgba(16,185,129,0.4)',
+    badge: 'Persona',
+    badgeVariant: 'emerald',
+  },
+  iterative_repair: {
+    icon: RefreshCw,
+    color: '#f59e0b',
+    glow: 'rgba(245,158,11,0.2)',
+    activeBg: 'rgba(245,158,11,0.07)',
+    activeBorder: 'rgba(245,158,11,0.4)',
+    badge: 'Self-Repair',
+    badgeVariant: 'amber',
+  },
+};
 
 export const ExperimentsPage: React.FC = () => {
   const [selectedStrategy, setSelectedStrategy] = useState<PromptStrategyDefinition>(
@@ -26,108 +85,107 @@ export const ExperimentsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [inspectedTemplate, setInspectedTemplate] = useState<PromptStrategyDefinition | null>(null);
 
-  const getIconForStrategy = (id: string) => {
-    switch (id) {
-      case 'zero_shot':
-        return Sparkles;
-      case 'few_shot':
-        return Layers;
-      case 'chain_of_thought':
-        return GitBranch;
-      case 'role_expert':
-        return Shield;
-      case 'iterative_repair':
-        return RefreshCw;
-      default:
-        return FlaskConical;
-    }
+  const meta = strategyMeta[selectedStrategy.id] || {
+    icon: FlaskConical,
+    color: '#94a3b8',
+    glow: 'rgba(148,163,184,0.2)',
+    activeBg: 'rgba(148,163,184,0.07)',
+    activeBorder: 'rgba(148,163,184,0.4)',
+    badge: 'Strategy',
+    badgeVariant: 'slate',
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-150">
-      {/* Page Header Banner */}
-      <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="space-y-8 animate-fade-in-up">
+      {/* Page Header */}
+      <div
+        className="rounded-3xl p-7 flex flex-col md:flex-row items-start md:items-center justify-between gap-5"
+        style={{
+          background: 'linear-gradient(135deg, rgba(5,12,30,0.95) 0%, rgba(8,15,38,0.9) 100%)',
+          border: '1px solid rgba(99,125,180,0.12)',
+        }}
+      >
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-slate-100 tracking-tight">
-              Prompt Engineering Experimentation Studio
+          <div className="flex flex-wrap items-center gap-2.5 mb-3">
+            <h2 className="text-xl font-bold text-slate-100 tracking-tight">
+              Prompt Engineering Studio
             </h2>
-            <Badge variant="cyan" size="sm">
-              v1.0.0 Registry
-            </Badge>
+            <Badge variant="cyan" size="md">v1.0.0 Registry</Badge>
           </div>
-          <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Configure, inspect, and benchmark prompt topologies. Prompt templates are strictly versioned in YAML and decoupled from application business logic.
+          <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">
+            Configure, inspect, and benchmark prompt topologies. Templates are strictly versioned
+            in YAML and fully decoupled from application business logic.
           </p>
         </div>
-
-        <Badge variant="demo" size="md">
-          [Configuration Preview Mode]
-        </Badge>
+        <Badge variant="demo" size="md">[Configuration Preview]</Badge>
       </div>
 
       {/* Strategy Cards Grid */}
-      <div className="space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
-          Available Prompt Strategies ({PROMPT_STRATEGY_DEFINITIONS.length})
+      <div className="space-y-3">
+        <h3 className="text-xs font-mono uppercase tracking-widest text-slate-500 font-semibold px-1">
+          Available Strategies ({PROMPT_STRATEGY_DEFINITIONS.length})
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {PROMPT_STRATEGY_DEFINITIONS.map((strat) => {
-            const Icon = getIconForStrategy(strat.id);
+            const m = strategyMeta[strat.id] || { icon: FlaskConical, color: '#94a3b8', glow: 'rgba(148,163,184,0.2)', activeBg: 'rgba(148,163,184,0.07)', activeBorder: 'rgba(148,163,184,0.3)', badge: '', badgeVariant: 'slate' };
+            const Icon = m.icon;
             const isSelected = selectedStrategy.id === strat.id;
 
             return (
               <div
                 key={strat.id}
-                onClick={() => {
-                  setSelectedStrategy(strat);
-                  setTemperature(strat.defaultTemperature);
+                onClick={() => { setSelectedStrategy(strat); setTemperature(strat.defaultTemperature); }}
+                className="relative p-4 rounded-2xl cursor-pointer transition-all duration-300 flex flex-col"
+                style={{
+                  background: isSelected ? m.activeBg : 'rgba(7,14,32,0.7)',
+                  border: `1px solid ${isSelected ? m.activeBorder : 'rgba(99,125,180,0.1)'}`,
+                  boxShadow: isSelected ? `0 0 24px ${m.glow}, 0 4px 20px rgba(0,0,0,0.3)` : '0 2px 12px rgba(0,0,0,0.3)',
+                  transform: isSelected ? 'translateY(-2px)' : 'translateY(0)',
                 }}
-                className={`p-5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
-                  isSelected
-                    ? 'bg-cyan-950/40 border-cyan-500 shadow-lg shadow-cyan-950/50 ring-1 ring-cyan-500/40'
-                    : 'bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
-                }`}
               >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        isSelected ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800 text-slate-300'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <Badge variant="purple" size="sm">
-                      {strat.tag}
-                    </Badge>
+                {/* Gradient top line when selected */}
+                {isSelected && (
+                  <div
+                    className="absolute top-0 left-4 right-4 h-px rounded-full"
+                    style={{ background: `linear-gradient(90deg, transparent, ${m.color}, transparent)` }}
+                  />
+                )}
+
+                <div className="flex items-center justify-between mb-3">
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
+                    style={{
+                      background: isSelected ? m.glow.replace('0.2)', '0.3)') : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${isSelected ? m.activeBorder : 'rgba(255,255,255,0.06)'}`,
+                    }}
+                  >
+                    <Icon className="w-4 h-4" color={isSelected ? m.color : '#64748b'} />
                   </div>
-
-                  <h4 className={`text-sm font-semibold mb-1.5 ${isSelected ? 'text-white' : 'text-slate-200'}`}>
-                    {strat.name}
-                  </h4>
-
-                  <p className="text-xs text-slate-400 leading-relaxed mb-3 line-clamp-3">
-                    {strat.description}
-                  </p>
                 </div>
 
-                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-slate-400">
-                    Template: <strong className="text-cyan-400">v{strat.version}</strong>
-                  </span>
+                <h4 className="text-xs font-semibold text-slate-100 mb-1 leading-tight">{strat.name}</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed mb-3 flex-1 line-clamp-2">
+                  {strat.description}
+                </p>
 
+                <div className="flex items-center justify-between pt-2.5 border-t border-white/[0.05]">
+                  <span className="text-[10px] font-mono text-slate-600">v{strat.version}</span>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setInspectedTemplate(strat);
                       setIsModalOpen(true);
                     }}
-                    className="flex items-center gap-1 text-[11px] font-mono text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-800 transition"
+                    className="flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg transition-all"
+                    style={{
+                      color: m.color,
+                      background: m.glow.replace('0.2)', '0.08)'),
+                      border: `1px solid ${m.activeBorder.replace('0.4)', '0.2)')}`,
+                    }}
                   >
-                    <Eye className="w-3 h-3" />
-                    <span>View YAML</span>
+                    <Eye className="w-2.5 h-2.5" />
+                    YAML
                   </button>
                 </div>
               </div>
@@ -136,131 +194,167 @@ export const ExperimentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Selected Strategy Deep-Dive & Parameter Controls */}
+      {/* Detail + Parameters */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Academic Rationale Card */}
+        {/* Strategy Deep-Dive */}
         <Card
           className="lg:col-span-2"
-          title={`Strategy Invariant Analysis: ${selectedStrategy.name}`}
-          badge={<Badge variant="cyan" size="sm">v{selectedStrategy.version}</Badge>}
+          title={`Strategy Analysis: ${selectedStrategy.name}`}
+          badge={<Badge variant={meta.badgeVariant as any} size="sm">v{selectedStrategy.version}</Badge>}
+          glowColor="blue"
         >
           <div className="space-y-4 text-xs">
+            {/* Hypothesis */}
             <div>
-              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-500 block mb-1">
-                Formal Hypothesis & Objective
+              <span className="text-[10px] uppercase font-mono tracking-widest text-slate-600 block mb-2">
+                Formal Hypothesis & Research Objective
               </span>
-              <p className="text-slate-200 leading-relaxed bg-slate-950/60 p-3 rounded-lg border border-slate-800">
-                {selectedStrategy.academicRationale}
-              </p>
-            </div>
-
-            <div>
-              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-500 block mb-1">
-                Mechanism & Prompt Architecture
-              </span>
-              <p className="text-slate-300 leading-relaxed">
-                {selectedStrategy.description}
-              </p>
-            </div>
-
-            <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-              <span className="font-mono text-slate-400">
-                Storage: <code className="text-cyan-400">prompts/translation/{selectedStrategy.id}_v1.yaml</code>
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                icon={<Eye className="w-3.5 h-3.5" />}
-                onClick={() => {
-                  setInspectedTemplate(selectedStrategy);
-                  setIsModalOpen(true);
+              <div
+                className="p-3.5 rounded-xl leading-relaxed text-slate-300"
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderLeft: `2px solid ${meta.color}`,
                 }}
               >
-                Inspect Template Schema
+                {selectedStrategy.academicRationale}
+              </div>
+            </div>
+
+            {/* Architecture */}
+            <div>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-slate-600 block mb-2">
+                Mechanism & Prompt Architecture
+              </span>
+              <p className="text-slate-400 leading-relaxed">{selectedStrategy.description}</p>
+            </div>
+
+            {/* Template path */}
+            <div
+              className="flex items-center justify-between pt-3 border-t border-white/[0.05]"
+            >
+              <div className="flex items-center gap-2 text-slate-500 font-mono text-[11px]">
+                <span>Path:</span>
+                <code style={{ color: meta.color }}>
+                  prompts/translation/{selectedStrategy.id}_v1.yaml
+                </code>
+              </div>
+              <Button
+                variant="outline"
+                size="xs"
+                icon={<Eye className="w-3 h-3" />}
+                onClick={() => { setInspectedTemplate(selectedStrategy); setIsModalOpen(true); }}
+              >
+                Inspect YAML
               </Button>
             </div>
           </div>
         </Card>
 
-        {/* Hyperparameter Configuration Tuning */}
+        {/* Hyperparameter Tuning */}
         <Card
-          title="Inference Hyperparameters"
-          subtitle="Model sampling controls for prompt evaluation"
+          title="Inference Parameters"
+          subtitle="Model sampling controls"
           badge={<Sliders className="w-4 h-4 text-cyan-400" />}
+          glowColor="purple"
         >
-          <div className="space-y-4 text-xs">
+          <div className="space-y-5 text-xs">
+            {/* Temperature */}
             <div>
-              <div className="flex items-center justify-between mb-1.5 font-mono">
-                <span className="text-slate-300">Temperature</span>
-                <span className="text-cyan-400 font-bold">{temperature}</span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 font-mono text-slate-300">
+                  <Thermometer className="w-3.5 h-3.5 text-cyan-500" />
+                  <span>Temperature</span>
+                </div>
+                <span
+                  className="font-mono font-bold text-sm"
+                  style={{ color: meta.color }}
+                >
+                  {temperature}
+                </span>
               </div>
               <input
                 type="range"
-                min="0.0"
-                max="1.0"
-                step="0.05"
+                min="0.0" max="1.0" step="0.05"
                 value={temperature}
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                className="w-full accent-cyan-500 bg-slate-800 rounded-lg h-1.5"
+                className="w-full"
               />
-              <span className="text-[10px] text-slate-500 mt-1 block">
-                Lower values (0.0-0.2) prioritize strict deterministic syntactic compliance.
-              </span>
+              <p className="text-[10px] text-slate-600 mt-1 font-mono">
+                0.0–0.2 = strict deterministic · 0.5–1.0 = creative
+              </p>
             </div>
 
-            <div className="pt-2 border-t border-slate-800">
-              <div className="flex items-center justify-between mb-1.5 font-mono">
-                <span className="text-slate-300">Top P (Nucleus Sampling)</span>
-                <span className="text-cyan-400 font-bold">{topP}</span>
+            {/* Top P */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 font-mono text-slate-300">
+                  <Cpu className="w-3.5 h-3.5 text-purple-500" />
+                  <span>Top P (Nucleus)</span>
+                </div>
+                <span className="font-mono font-bold text-sm text-purple-400">{topP}</span>
               </div>
               <input
                 type="range"
-                min="0.5"
-                max="1.0"
-                step="0.05"
+                min="0.5" max="1.0" step="0.05"
                 value={topP}
                 onChange={(e) => setTopP(parseFloat(e.target.value))}
-                className="w-full accent-cyan-500 bg-slate-800 rounded-lg h-1.5"
+                className="w-full"
               />
             </div>
 
-            <div className="pt-2 border-t border-slate-800">
-              <div className="flex items-center justify-between mb-1.5 font-mono">
-                <span className="text-slate-300">Max Tokens</span>
-                <span className="text-cyan-400 font-bold">{maxTokens}</span>
+            {/* Max Tokens */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 font-mono text-slate-300">
+                  <Hash className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Max Tokens</span>
+                </div>
+                <span className="font-mono font-bold text-sm text-emerald-400">{maxTokens.toLocaleString()}</span>
               </div>
               <input
                 type="range"
-                min="1024"
-                max="8192"
-                step="512"
+                min="1024" max="8192" step="512"
                 value={maxTokens}
                 onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-                className="w-full accent-cyan-500 bg-slate-800 rounded-lg h-1.5"
+                className="w-full"
               />
+              <p className="text-[10px] text-slate-600 mt-1 font-mono">Range: 1,024 – 8,192 tokens</p>
             </div>
 
-            <div className="pt-3">
-              <div className="p-3 rounded-lg bg-cyan-950/30 border border-cyan-800/60 text-[11px] text-cyan-200">
-                Parameters are serialized into prompt requests during benchmark and translation runs.
-              </div>
+            {/* Summary box */}
+            <div
+              className="p-3 rounded-xl text-[11px] font-mono text-slate-400"
+              style={{
+                background: meta.glow.replace('0.2)', '0.06)'),
+                border: `1px solid ${meta.activeBorder.replace('0.4)', '0.15)')}`,
+              }}
+            >
+              Parameters serialize into prompt requests during benchmark and translation runs.
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Modal: View Prompt YAML */}
+      {/* YAML Template Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={`Prompt Template Definition: ${inspectedTemplate?.name} (v${inspectedTemplate?.version})`}
+        title={`Prompt Template: ${inspectedTemplate?.name} (v${inspectedTemplate?.version})`}
         maxWidth="2xl"
       >
         <div className="space-y-4">
           <p className="text-xs text-slate-400">
-            Raw YAML specification demonstrating parameters, system invariants, and user template formatting:
+            Raw YAML specification — parameters, system invariants, and user template formatting:
           </p>
-          <pre className="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed">
+          <pre
+            className="p-4 rounded-xl font-mono text-xs overflow-x-auto leading-relaxed"
+            style={{
+              background: 'rgba(3,6,15,0.9)',
+              border: '1px solid rgba(99,125,180,0.12)',
+              color: '#94a3b8',
+            }}
+          >
             {inspectedTemplate?.yamlTemplatePreview}
           </pre>
           <div className="flex justify-end">

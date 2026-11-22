@@ -11,6 +11,7 @@ export interface MonacoDiffEditorProps {
   height?: string;
   title?: string;
   badge?: React.ReactNode;
+  renderSideBySide?: boolean;
 }
 
 export const MonacoDiffEditor: React.FC<MonacoDiffEditorProps> = ({
@@ -21,6 +22,7 @@ export const MonacoDiffEditor: React.FC<MonacoDiffEditorProps> = ({
   height = '480px',
   title = 'Structural & Syntactic Diff View',
   badge,
+  renderSideBySide = true,
 }) => {
   const settings = loadSettings();
 
@@ -63,7 +65,7 @@ export const MonacoDiffEditor: React.FC<MonacoDiffEditorProps> = ({
             fontSize: settings.editorFontSize || 13,
             lineNumbers: 'on',
             minimap: { enabled: false },
-            renderSideBySide: true,
+            renderSideBySide,
             scrollBeyondLastLine: false,
             automaticLayout: true,
             wordWrap: settings.editorWordWrap ? 'on' : 'off',

@@ -188,7 +188,7 @@ export const BenchmarkDashboard: React.FC<BenchmarkDashboardProps> = ({
                       )}
                     </td>
                     <td className="p-3 text-slate-500 text-[10px]">
-                      {new Date(h.created_at).toLocaleTimeString()}
+                      {h.created_at ? new Date(h.created_at).toLocaleTimeString() : 'N/A'}
                     </td>
                   </tr>
                 ))}

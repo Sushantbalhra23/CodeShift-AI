@@ -42,7 +42,7 @@ async def batch_translate_code(
             source_code=request.source_code,
             source_language=request.source_language,
             target_language=request.target_language,
-            strategy=strat,
+            prompt_strategy=strat,
             temperature=request.temperature,
         )
         res = await service.translate(request=single_req, provider=provider)

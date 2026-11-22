@@ -25,7 +25,7 @@ def test_prompt_registry_loading():
 
 def test_prompt_registry_strategies_coverage():
     registry = get_prompt_registry()
-    expected_strategies = ["zero_shot", "few_shot", "chain_of_thought", "role_expert"]
+    expected_strategies = ["baseline", "zero_shot", "few_shot", "chain_of_thought", "role_expert"]
     for strat in expected_strategies:
         tpl = registry.get_template(task="translation", strategy=strat)
         assert tpl is not None
@@ -46,6 +46,6 @@ async def test_mock_llm_client_translation():
     ]
     response = await client.generate(messages)
     assert response.provider == "mock"
-    assert "def " in response.content or "class " in response.content
+    assert "translated_code" in response.content
     assert response.latency_ms > 0
     assert response.usage.total_tokens > 0

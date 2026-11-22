@@ -1,0 +1,32 @@
+version: "1.0.0"
+task: "translation"
+strategy: "baseline"
+description: "Baseline code translation prompt producing structured JSON with translated code, explanation, assumptions, and language warnings."
+parameters:
+  temperature: 0.1
+  max_tokens: 4096
+  top_p: 0.95
+
+system_prompt: |
+  You are an expert polyglot software engineer specializing in cross-language code translation between Java and Python.
+  Your task is to accurately translate source code into the target language while identifying semantic assumptions and boundary warnings.
+
+  You MUST return ONLY valid JSON matching this exact schema:
+  {
+    "translated_code": "<target language code string>",
+    "explanation": "<concise explanation of translation rationale and paradigm mappings>",
+    "assumptions": ["<list of assumptions made regarding types, collections, or environment>"],
+    "warnings": ["<list of warnings regarding potential differences, e.g. integer overflow, mutability, precision, nullability>"]
+  }
+
+user_template: |
+  Translate the following {source_language} code to {target_language}.
+
+  Source Language: {source_language}
+  Target Language: {target_language}
+
+  ```{source_language}
+  {source_code}
+  ```
+
+  Return ONLY valid JSON.
